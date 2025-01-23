@@ -353,19 +353,43 @@ sds sdscatprintf(sds s, const char *fmt, ...) {
  * Output will be just "Hello World".
  */
 sds sdstrim(sds s, const char *cset) {
+    // 获取 sds 头部结构体指针
     struct sdshdr *sh = (void*) (s-(sizeof(struct sdshdr)));
     char *start, *end, *sp, *ep;
     size_t len;
 
+    // sp 和 ep 分别用作前后遍历的指针
+    // start 和 end 分别指向原字符串的起始和结束位置
     sp = start = s;
     ep = end = s+sdslen(s)-1;
+
+    // 从左向右遍历，跳过所有在 cset 中的字符
+    // strchr() 检查当前字符是否在 cset 中
+    // 用于在字符串中查找特定字符的第一次出现位置。
+    // 如果找到字符，返回该字符在字符串中第一次出现的位置的指针
+    // 如果没有找到字符，返回 NULL
     while(sp <= end && strchr(cset, *sp)) sp++;
+
+    // 从右向左遍历，跳过所有在 cset 中的字符
     while(ep > start && strchr(cset, *ep)) ep--;
+
+    // 计算修剪后的字符串长度
+    // 如果 sp > ep，说明整个字符串都被修剪掉了，长度为 0
     len = (sp > ep) ? 0 : ((ep-sp)+1);
+
+    // 如果需要，将字符串移动到缓冲区开始位置
     if (sh->buf != sp) memmove(sh->buf, sp, len);
+
+    // 添加字符串结束符
     sh->buf[len] = '\0';
+
+    // 更新空闲空间：原长度减去新长度的差值会变成空闲空间
     sh->free = sh->free+(sh->len-len);
+
+    // 更新字符串长度
     sh->len = len;
+
+    // 返回原字符串指针
     return s;
 }
 
